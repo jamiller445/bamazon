@@ -5,6 +5,8 @@ var mysql = require("mysql");
 var inquirer = require("inquirer");
 var columnify = require('columnify');
 
+let db_success = false;
+
 var connection = mysql.createConnection({
     host: "localhost",
 
@@ -24,13 +26,13 @@ function displayAll() {
     connection.query(query, function (err, res) {
         if (err) throw err;
 
-        console.log(res[0]);
+        // console.log(res[0]);
         
         var columns = columnify(res, {
             showHeaders: false,
             columns: ['item_id', 'product_name', 'department_name', 'price', 'stock_quanity']
         })
-        console.log("0123456789012345678901234567890123456789012345678901234567890123456789");
+        // console.log("0123456789012345678901234567890123456789012345678901234567890123456789");
         console.log("\nID  Product         Department     Price    Quanity On Hand\n" +
             "--  -------         ----------     -----    ------- -- ----");
         console.log(columns);
@@ -46,7 +48,8 @@ function startHere() {
             type: "rawlist",
             message: "What would you like to do?",
             choices: [
-                "Place Order"
+                "Place Order",
+                "Exit Program"
             ]
         })
         .then(function (answer) {
@@ -54,12 +57,15 @@ function startHere() {
                 case "Place Order":
                     runOrder();
                     break;
+                case "Exit Program":
+                    process.exit() ;
+                    break ;
             }
         });
 }
 
 function runOrder() {
-    console.log("In runOrder");
+    // console.log("In runOrder");
     let question = [{
         type: 'input',
         name: 'order_p_id',
@@ -89,12 +95,13 @@ function runOrder() {
     
         // console.log(answer.order_p_id);
         // console.log(answer.order_quant);
-        runPlaceOrder(answer.order_p_id, answer.order_quant);  
+        runPlaceOrder(answer.order_p_id, parseInt(answer.order_quant)); 
+         
     });
 }
 
 function runPlaceOrder(item, quantity){
-    console.log("In runPlaceOrder");
+    // console.log("In runPlaceOrder");
     // let rpo_item = item;
     // let rpo_quantity = quantity;
 
@@ -108,14 +115,24 @@ function runPlaceOrder(item, quantity){
         console.log("")
         if (res[0].stock_quanity < quantity ) {
             console.log("Insufficient quantity!\n");
+            inquirer.prompt(
+                {
+                type: 'confirm',
+                name: 'anyKey',
+                message: ' Press any key to continue '
+                }
+            ).then(answer => {
+            // console.log("Continue ...");
+                displayAll();
+            });
         }
         else {
             // console.log("placing order\n");
             rpo_quantity = res[0].stock_quanity;
-            console.log("rpo_quantity= " + rpo_quantity);
-            console.log("quantity= " + quantity);
+            // console.log("rpo_quantity= " + rpo_quantity);
+            // console.log("quantity= " + "  " + quantity + typeof quantity);
             rpo_quantity -= quantity;
-            console.log("rpo_quanity= " + rpo_quantity + typeof rpo_quantity);
+            // console.log("rpo_quanity= " + rpo_quantity + typeof rpo_quantity);
             var query = connection.query(
                 "UPDATE products SET ? WHERE ?",
                 [ 
@@ -131,10 +148,29 @@ function runPlaceOrder(item, quantity){
         
                 // console.log("item num= " + res[0].item_id);
                 // console.log("stock quanity= " + res[0].stock_quanity);
-        });
-        }
-});
 
+                // console.log("typeof quality= " + typeof(quantity));
+                // console.log("res= " + res);
+                if ( res.affectedRows > 0 ) {                
+                    console.log("Your order has been placed; total cost is " + parseFloat(quantity) * 2.00);
+
+                    inquirer.prompt(
+                        {
+                        type: 'confirm',
+                        name: 'anyKey',
+                        message: ' Press any key to continue '
+                        }
+                    ).then(answer => {
+                    // console.log("Continue ...");
+                        displayAll();
+                    });
+                }               
+        });
+        
+        }
+// displayAll();
+
+});
 }
 
 
