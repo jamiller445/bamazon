@@ -6,6 +6,7 @@ var inquirer = require("inquirer");
 var columnify = require('columnify');
 
 let db_success = false;
+let prodCount = 0;
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -25,27 +26,55 @@ function displayAll() {
     var query = "SELECT * FROM products";
     connection.query(query, function (err, res) {
         if (err) throw err;
-
-        // console.log(res[0]);
-        
+        prodCount = res.length;
+        console.log("number of products= " + res.length);
         var columns = columnify(res, {
-            showHeaders: false,
-            columns: ['item_id', 'product_name', 'department_name', 'price', 'stock_quanity']
+            config: {
+                item_id: {
+                    headingTransform: function(heading) {
+                        heading = "ID\n==";
+                        return heading;     
+                    },
+                    align: 'right'
+                },
+                product_name: {
+                    headingTransform: function(heading){
+                        heading = "Product Name\n============";
+                        return heading;   
+                    },
+                    align: 'left'  
+                },
+                department_name: {
+                    headingTransform: function(heading){
+                        heading = "Department Name\n===============";
+                        return heading;   
+                    }  
+                },
+                price: {
+                    headingTransform: function(heading){
+                        heading = "Price\n=====";
+                        return heading;   
+                    }    
+                },
+                stock_quanity: {
+                    headingTransform: function(heading){
+                        heading = "Quantity\n========\n\n";
+                        return heading;   
+                    },
+                    align: 'left'   
+                }
+            }
         })
-        // console.log("0123456789012345678901234567890123456789012345678901234567890123456789");
-        console.log("\nID  Product         Department     Price    Quanity On Hand\n" +
-            "--  -------         ----------     -----    ------- -- ----");
-        console.log(columns);
+        console.log(columns + "\n");
         startHere();
     });
-    // connection.end();
 }
 
 function startHere() {
     inquirer
         .prompt({
-            name: "action",
-            type: "rawlist",
+            type: "list",
+            name: "action",          
             message: "What would you like to do?",
             choices: [
                 "Place Order",
@@ -65,14 +94,13 @@ function startHere() {
 }
 
 function runOrder() {
-    // console.log("In runOrder");
     let question = [{
         type: 'input',
         name: 'order_p_id',
         message: " Enter Product ID ",
         validate: function validItemNumber(value){
            var pass = value.match(/[0123456789]+/);
-           if (pass){
+           if (pass && value <= prodCount){
                return true;
            }
            return "Please enter a valid item number."
@@ -90,49 +118,32 @@ function runOrder() {
                 return "Please enter a valid item number.";
              }
         }];
-      
-    inquirer.prompt(question).then(answer => {
-    
-        // console.log(answer.order_p_id);
-        // console.log(answer.order_quant);
-        runPlaceOrder(answer.order_p_id, parseInt(answer.order_quant)); 
-         
+          inquirer.prompt(question).then(answer => {
+            runPlaceOrder(answer.order_p_id, parseInt(answer.order_quant));          
     });
 }
 
 function runPlaceOrder(item, quantity){
-    // console.log("In runPlaceOrder");
-    // let rpo_item = item;
-    // let rpo_quantity = quantity;
-
-    // query db with item number to determine if quantity on hand can fill the order
-    var query = "SELECT products.item_id, products.stock_quanity FROM products WHERE products.item_id = ?";
+    var query = "SELECT products.item_id, products.stock_quanity, products.price FROM products WHERE products.item_id = ?";
     connection.query(query, item, function (err, res) {
         if (err) throw err;
-
-        // console.log("item num= " + res[0].item_id);
-        // console.log("stock quanity= " + res[0].stock_quanity);
         console.log("")
         if (res[0].stock_quanity < quantity ) {
-            console.log("Insufficient quantity!\n");
+            console.log("Insufficient quantity to fill order!\n");
             inquirer.prompt(
                 {
-                type: 'confirm',
+                type: 'input',
                 name: 'anyKey',
                 message: ' Press any key to continue '
                 }
             ).then(answer => {
-            // console.log("Continue ...");
                 displayAll();
             });
         }
         else {
-            // console.log("placing order\n");
             rpo_quantity = res[0].stock_quanity;
-            // console.log("rpo_quantity= " + rpo_quantity);
-            // console.log("quantity= " + "  " + quantity + typeof quantity);
+            rpo_price = res[0].price;
             rpo_quantity -= quantity;
-            // console.log("rpo_quanity= " + rpo_quantity + typeof rpo_quantity);
             var query = connection.query(
                 "UPDATE products SET ? WHERE ?",
                 [ 
@@ -145,34 +156,23 @@ function runPlaceOrder(item, quantity){
                 ],
                 function (err, res) {
                 if (err) throw err;
-        
-                // console.log("item num= " + res[0].item_id);
-                // console.log("stock quanity= " + res[0].stock_quanity);
-
-                // console.log("typeof quality= " + typeof(quantity));
-                // console.log("res= " + res);
                 if ( res.affectedRows > 0 ) {                
-                    console.log("Your order has been placed; total cost is " + parseFloat(quantity) * 2.00);
+                    console.log("Your order has been placed; total cost is " +
+                                 parseInt(quantity) * rpo_price);
 
                     inquirer.prompt(
                         {
-                        type: 'confirm',
+                        type: 'input',
                         name: 'anyKey',
                         message: ' Press any key to continue '
                         }
                     ).then(answer => {
-                    // console.log("Continue ...");
                         displayAll();
                     });
                 }               
         });
         
         }
-// displayAll();
-
 });
 }
-
-
 displayAll();
-// connection.end();
