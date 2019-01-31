@@ -42,3 +42,33 @@ The manager interface presents a list of four options, as below.
   **Customer Interface**
 
   ![](/images/bamazonCustomer.png)
+
+  **Place Order**
+
+  ![](/images/placeorder.png)
+
+  **Place Order Result**
+
+  ![](/images/placeorderresult.png)
+
+  ### Manager Interface
+
+  **View Products**
+
+  ![](/images/viewproducts.png)
+
+  **View Low Inventory**
+
+   ![](/images/lowinventory.png)
+
+   **Add Inventory**
+
+   ![](/images/addinventory.png)
+
+   **Add New Product**
+
+   ![](/images/addproduct.png)
+
+   **Exit**
+
+   ![](/images/exit.png)
